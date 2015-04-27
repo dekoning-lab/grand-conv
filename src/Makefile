@@ -33,7 +33,7 @@ endif
 
 # Compiler-specific flags (including for OpenMP)
 CFLAGS_ICC = -O3 -m64 -openmp -funroll-loops -fomit-frame-pointer -finline-functions
-CFLAGS_GCC = -O4 -fopenmp -funroll-loops -fomit-frame-pointer -finline-functions
+CFLAGS_GCC = -O4 -fopenmp -funroll-loops -fomit-frame-pointer -finline-functions -w -lm
 CFLAGS_CLANG = -O3 -funroll-loops -fomit-frame-pointer -Wno-absolute-value -Wno-empty-body -Wno-pointer-sign -Wno-tautological-compare -Wno-format -Wno-implicit-function-declaration -Wno-return-type -lm -L/usr/local/lib -liomp5
 
 ifeq ($(strip $(findstring icc,$(CC))),icc)
