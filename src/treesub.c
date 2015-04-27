@@ -6025,6 +6025,7 @@ int AncestralMarginal (FILE *fout, double x[], double fhsiteAnc[], double Sir[])
    node1 = malloc( numBranchPairs * sizeof(int) );
    node2 = malloc( numBranchPairs * sizeof(int) );
    postNumSub = malloc (lst * sizeof(double) );
+   memset(postNumSub, 0, lst*sizeof(double));
    siteClass = malloc (lst * sizeof(int) );
 
 
