@@ -1,0 +1,193 @@
+#!/usr/bin/perl
+
+# gc-estimate (Grand-Convergence parameter estimation)
+
+# Jason de Koning, April 2015
+# de Koning Lab, University of Calgary
+# http://lab.jasondk.io
+
+# Wrapper to run codeml to estimate branch-lengths and alpha parameter
+# and create control files to automatically run 'gc-discover'
+
+# Primary input options allowed:
+# --in=alignment_file.phy
+# --tree=tree_file.tree
+# --ncat-gamma=>5 (# of gamma categories)
+# --gencode=0 (PAML numbering; 0=universal; 1=mitochondrial; etc.)
+# --aa-model=lg (other models available in dat folder as provided by PAML)
+# --seqtype=aa/codon (for the format of the seqfile specified by --in)
+
+# (Other input options:)
+# --free-bl=1/0 (estimate branch-lengths?)
+# --free-gamma=1/0 (estimate gamma alpha parameter?)
+# --dir=output (folder name for output and temp files)
+# --alpha=1.0 (override gamma distribution's alpha parameter)
+# --clean=0 (remove columns with gaps/ambiguities?)
+
+# Allowed command-line options dictionary 
+my %allowed = ("in"=>"", "tree"=>"", "free-bl"=>1, "free-gamma"=>1, "ncat-gamma"=>5, "aa-model"=>"lg", "gencode"=>0, "clean"=>0, "dir"=>"output", "seqtype"=>"codon", "alpha"=>-1 );
+
+# Parse input options and store in opts
+my %opts = parseInput(\@ARGV);
+my $template = "assets/codeml-template.ctl";
+
+# Set optional default options
+applyDefaults( \%opts );
+
+# Make output directory if it doesn't exist
+if (! -e $opts{'dir'}) { mkdir($opts{'dir'}); }
+
+print "Outputting new control file (gc-estimate)...\n";
+createControlfile(1, "$opts{'dir'}/runme-codeml.ctl", \%opts );
+
+print "Running codeml...\n";
+system("cd $opts{'dir'} && ../bin/codeml runme-codeml.ctl");
+
+captureOutput($opts{'dir'});
+
+print "\nOutputting new control file (gc-discover)...\n";
+createControlfile(2, "$opts{'dir'}/runme-gc.ctl", \%opts );
+
+print "\nDone gc-estimate.\n";
+exit;
+
+
+# Functions
+# =============================================================================================================
+
+sub captureOutput {
+	my $dir = shift;
+	open(IN, "$dir/codeml-output.out") or die "Error: Cannot output expected output file codeml-output.out in $dir\n";
+	my $notDone=1;
+
+	while ($notDone && !eof(IN) ) {
+		my $line = <IN>;
+		chomp($line);
+		if ($line =~ m/tree length/) {
+			my $dummy = <IN>; $dummy=<IN>; $dummy=<IN>;
+			my $tree = <IN>; chomp($tree);
+
+			$dummy = <IN>; $dummy = <IN>; $dummy = <IN>;
+			$alphaLine = <IN>; chomp($alphaLine);
+			$alphaLine =~ m/([0-9\.]+)$/;
+			$alpha = $1;
+
+			# Write tree
+			open(OUT, ">$opts{'dir'}/gc-estimated-bls.tree");
+			print OUT $tree."\n";
+			close OUT;
+
+			# Store alpha
+			if ($opts{'free-gamma'}) {
+				$opts{'alpha'} = $alpha;
+			}
+
+			$notDone=0;
+		}
+	}
+	close IN;
+}
+
+sub applyDefaults {
+	# Apply defaults to unset options; enforce required options (input files)
+	foreach $key (keys %allowed) {
+		if ( exists( $opts{$key} ) ) { } else {
+			if ( $key eq "in" ) {
+				die "Error: a sequence alignment is required with --in=file.\n";
+			}
+			if ( $key eq "tree" ) {
+				die "Error: a phylogenetic tree is required with --tree=file.\n";
+			}
+
+			unless ($key eq "alpha") { $opts{$key} = $allowed{$key}; }
+		}
+	}
+}
+
+sub createControlfile {
+	# Create a control-file using template and options dictionary
+	my $phase = shift;
+	my $fname = shift;
+	my $optRef = shift;
+	my %options = %$optRef;
+
+	# Need to actually output this to disk now
+	open(OUT, ">".$fname) or die "Error: Can't open file $fname for output.\n";
+
+	# Correspondence with PAML controls
+	my %commandOptions = ("in"=>"seqfile", "tree"=>"treefile", "free-bl"=>"fix_blength", "free-gamma"=>"fix_alpha", "ncat-gamma"=>"ncatG", "aa-model"=>"aaRatefile", "gencode"=>"icode", "clean"=>"cleandata", "alpha"=>"alpha");
+	my %revCommandOptions = reverse %commandOptions;
+
+	open(IN, $template) or die "Error: cannot open template control file $template.\n";
+	while (my $line = <IN>) {
+		chomp($line);
+		$line =~ s/^\s+//g;
+		my $flag = 0;
+		my $val = 0;
+		foreach $opt (keys %revCommandOptions) {
+			if ($line =~ m/^$opt[\s\+]=/) {
+				if ($opt eq "fix_blength") {
+					if ($phase==1) {
+						$val = $options{$revCommandOptions{"fix_blength"}};
+						if ($val eq '1') { $val = 0; } else { $val = 2; }
+					} else {
+						$val = 2;
+					}			
+					print OUT "\t$opt = $val\n"; 
+				} elsif ($opt eq "seqfile") {
+					$val = $options{$revCommandOptions{"seqfile"}};
+					print OUT "\t$opt = ../$val\n"; 
+				} elsif ($opt eq "treefile") {
+					if ($phase == 1) {
+						$val = $options{$revCommandOptions{"treefile"}};
+					} else {
+						$val = "$opts{'dir'}/gc-estimated-bls.tree" 
+					}	
+					print OUT "\t$opt = ../$val\n";
+				} elsif ($opt eq "fix_alpha") {
+					if ($phase == 1) {
+						$val = $options{$revCommandOptions{"fix_alpha"}};
+						if ($val eq '1') { $val = 0; } else { $val = 1; }
+					} else {
+						$val = 1;
+					}
+					print OUT "\t$opt = $val\n"; 
+				} elsif ($opt eq "alpha") {
+					$val = $options{$revCommandOptions{"alpha"}};
+					if ($val eq "") { $val = 1; } 
+					print OUT "\t$opt = $val\n"; 
+				} elsif ($opt eq "aaRatefile") {
+					print OUT "\t$opt = ../dat/$options{$revCommandOptions{$opt}}.dat\n";
+				} else {
+					print OUT "\t$opt = $options{$revCommandOptions{$opt}}\n";
+				}
+				$flag=1;
+			}
+		}
+		if ($flag==0) {
+			print OUT "\t$line\n";
+		}
+	}
+	close IN;
+	close OUT;
+}
+
+sub parseInput {
+	# Return a dictionary of command-line options
+	my $optRef = shift;
+	my @opt = @$optRef;
+	my %parsed;
+
+	foreach $key ( @opt ) {
+		@tok = split('[=]', $key);
+		$tok[0] =~ s/--//g;
+		$parsed{$tok[0]} = $tok[1];
+	}
+
+	foreach $key (keys %parsed) {
+		if ( exists( $allowed{$key} ) ) { }
+		else { die "Error: Option $key unrecognized.\n"; }
+	}
+
+	return %parsed;
+}

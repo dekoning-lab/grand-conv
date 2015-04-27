@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    
+    <title>
+      Data Explorer | Grand Convergence
+    </title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="assets/css/site.css">
+    <link rel="stylesheet" href="assets/css/jquery.dataTables.min.css">
+    
+    <!-- <link rel="stylesheet" href="http://cdn.datatables.net/1.10.2/css/jquery.dataTables.css"> -->
+  </head>
+  <body>
+    <a class="sr-only" href="#content">Skip to main content</a>
+    <!-- Navigation component -->
+    <header class="navbar navbar-inverse navbar-fixed-top bs-docs-nav" role="banner">
+      <div class="container">
+        <div class="navbar-header">
+          <button class="navbar-toggle" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a href="index.html" class="navbar-brand">Grand Convergence</a>
+        </div>
+        <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+          <ul class="nav navbar-nav">
+            <li> <a href="https://github.com/dekoning-lab/grand-conv/blob/master/ReadMe.md">Readme</a> </li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li> <a href="about.html">About</a> </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Subhead component -->
+    <div class="bs-header" id="content">
+      <div class="container">
+        <h1>Data Explorer</h1>
+    
+        <p>This is the Grand Convergence data explorer for the interactive, visual analysis of inferences made about convergent molecular evolution.</p>
+      </div>
+    </div>
+    <!-- Belt component -->
+    <div class="belt">
+      <div class="container">
+        <strong>
+          Need help? Visit the <a href="https://github.com/dekoning-lab/grand-conv/issues">Issues on GitHub</a> or visit the <a href="https://github.com/dekoning-lab/grand-conv/wiki/Docs">Grand Convergence docs</a> to learn more!
+        </strong>
+      </div>
+    </div>
+
+    <div class="container bs-docs-container">
+      
+
+<body onload='main()'>
+<br>
+<p>Grand Convergence (<code>grand-conv</code>) is for the rapid detection of convergent molecular evolution while integrating over uncertainty in ancestral states. It uses the general approach that we presented in Castoe, de Koning, et al. (2009) and the new algorithm of Qian and de Koning (in prep). The new algorithm is exact but is approximately 4,000X faster than our previous algorithm. Grand Convergence is based on the latest version of PAML (currently 4.8) and has been threaded for running on multi-core CPUs and many-core accelerators. It has also been modified to use Yang&#39;s node scaling approach to allow its use on large phylogenies.</p>
+
+
+<h1>Identify Lineages Enriched for Convergence</h1>
+<p>On a deep enough tree, the number of random convergence events is well-predicted by the number of divergent substitution pairs along the same set of branches. Non-Random convergence will therefore be manifested as a high positive residual from the regression line. Mouse-over data points or branches for more information.</p>
+
+<div id="wrapper" style="margin-left:auto; margin-right:auto; width:1200px; z-index:2000; background-color: #ffffff; ">
+	<div id="figure" style="float:left; width:550px; z-index:2000; background-color: #ffffff; ">
+    <div id="data-plot" style="margin-left: 10px; float:left; width:540px; outline: 0 !important; border: 0 !important; "></div>
+    <div style="float:centre; margin-left: 70px">
+      <p> Regression line Slope: <input type="text" id="slopeInputField" size="12" style="float:centre" onchange="updateRegressionLine()"> Intercept: <input type="text" id="interceptInputField" size="12" style="float:centre" onchange="updateRegressionLine()">
+      <p><button style="margin-left:120px;" id="showTipTipButton" onclick="showTipTip()" disabled>Show Tip-tip</button><button style="margin-left:20px;" id="hideTipTipButton" onclick="hideTipTip()">Hide Tip-tip</button></p> 
+      <p> <label style="float:centre; margin-left: 120px">Open</label> 
+        <a onclick="openSheetPopup()" text="Open" label="Open" style="float:centre; margin-left: 5px"> Branch Pairs Table View</a>
+    </div>
+  </div>
+
+  <div id="figure" style="float:left; width:550px; z-index:2000; background-color: #ffffff; ">
+		<div id="data-tree" style="float:left; margin-left: 10px; outline: 0 !important; border: 0 !important; overflow:auto; "></div>
+      <div>
+      <p><p>
+      <p><input style="margin-left:150px;" type="range" min=1 max=10 step=1 value=3 oninput="setAttr('#branchThickness', '.branch', 'stroke-width')" id="branchThickness"/> Branch thickness</p>
+      <p><input style="margin-left:150px;" type="range" min=5 max=20 step=1 value=11 oninput="setAttr('#labelSize', '.leafLabel', 'font-size')" id="labelSize"/> Label size</p>
+      <p><button style="margin-left:200px;" onclick="resetZoom()">Reset zoom</button></p>
+      <treeOutput></treeOutput>
+    </div>
+  </div>
+</div>
+
+<p style="clear: both;"></p>
+<HR>
+  <h1>Site-Specific Posterior Analysis</h1>
+  <p>Information will be available on site-specific posterior probabilities of convergence for branch pairs indicated in the controlfile.</p>
+<p> Open <a onclick="openSiteSpecificPopup()" style="margin-left: 10px"> Look for site-specific results</a>
+  
+  <h1>Rate Plots</h1>
+  <a onclick="openRateVsDiversityPopup()"> Rate vs. Diversity plot</a><br/>
+  <a onclick="openRateVsProbConvergencePopup()"> Rate vs. Probability Convergence plot</a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bs-footer" role="contentinfo">
+      <div class="container">
+        <hr>
+    
+        <a href="http://lab.jasondk.io">de Koning Lab</a> at the University of Calgary<BR>
+        <ul class="footer-links">
+          <li>Currently v0.8.0</li>
+        </ul>
+      </div>
+    </footer>
+    
+    <!-- "back-to-top" button -->
+    <a href="#" style="right: 70px;" class="btn back-to-top btn-dark btn-fixed-bottom">[top]</a>
+
+    <!-- JS and analytics only. -->
+    <!-- @dataTag -->
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/svg.min.js"></script>
+    
+    <script src="assets/js/plugins.min.js"></script>
+    
+    <script src="assets/js/data.min.js"></script>
+    
+    <script src="assets/js/grand-conv.min.js"></script>
+  </body>
+</html>
