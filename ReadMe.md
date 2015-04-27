@@ -17,6 +17,17 @@ and: Qian C\*, Bryans N\*, Kruykov I, and APJ de Koning (2015). Visualization an
 Also see Castoe\*, de Koning\* et al 2009. "Evidence for an ancient adaptive episode of convergent molecular evolution." PNAS v106(22): 8986-8991. http://www.pnas.org/content/106/22/8986.abstract
 
 ---
+###About
+
+Grand Convergence (`grand-conv`) calculates the posterior expected numbers of convergent and divergent substitutions across all pairs of indendent branches of a phylogeny. The program uses a multi-threaded implementation of our new exact algorithm, which is about 4,000X faster than our original approach when run on a multi-core desktop computer. We also include many-core versions optimized for offloading calculations to Intel Xeon Phi coprocessors, but we found that this is not likely to be very useful except for unrealistically large datasets (see Qian and de Koning, 2015).
+
+All calculations are integrated over the posterior distribution of ancestral states and posterior substitutions. `grand-conv` will output site-specific convergence and divergence posterior probabilities for branch-pairs of interest (specified in `grand-conv.ctl`). Rate variation across sites is accommodated in the calculations and Yang's node scaling scheme is preserved to facilitate analysis on large phylogenies. `grand-conv` also automatically calculates a **robust, non-parametric errors in variables regression** to estimate a reliable null model from the data. Estimates of *excess convergence* are produced by comparing this null model to the data.
+
+When run with the Data Explorer, `grand-conv` will generate an HTML file (`$output/User/UI/index.html`) which provides several interactive visualizations of the results. Pairs of branches with high excess convergence can thus be readily identified, and publication quality figures can be produced automatically. Interactive versions of all figures from our 2009 PNAS paper (Castoe, de Koning, et al. 2009) can be automatically generated using the Data Explorer.
+
+*COMING SOON:* We have also included a pipeline that hooks into our evolutionary simulator, Palantír (Kryukov et al., 2015). This pipeline allows a more rigorous analysis of the random expected amount of convergent evolution between each pair of branches. It generates simulated data sets possessing *only* random convergence under a site-heterogeneous model of mutation-selection codon substitution that is roughly based on the real data. The pipeline will then calculate the random expected distribution of excess convergence for every pair of branches in the tree. This allows a more rigorous assessment of excess convergence by providing an empirical P-value that is specific to each pair of branches of interest.
+
+---
 ###Getting Started
 
 ####1. Prerequisites
@@ -74,15 +85,7 @@ make
 To view the results, open `$output/User/UI/index.html` in a standards-compliant web browser like Firefox.
 
 ---
-###About
 
-Grand Convergence (`grand-conv`) calculates the posterior expected numbers of convergent and divergent substitutions across all pairs of indendent branches of a phylogeny. All calculations are integrated over the posterior distribution of ancestral states and posterior substitutions. `grand-conv` will output site-specific convergence and divergence posterior probabilities for branch-pairs of interest (specified in `grand-conv.ctl`). Rate variation across sites is accommodated in the calculations and Yang's node scaling scheme is preserved to facilitate analysis on large phylogenies. `grand-conv` also automatically calculates a **robust, non-parametric errors in variables regression** to estimate a reliable null model from the data. Estimates of *excess convergence* are produced by comparing this null model to the data.
-
-When run with the Data Explorer, `grand-conv` will generate an HTML file (`$output/User/UI/index.html`) which provides several interactive visualizations of the results. Pairs of branches with high excess convergence can thus be readily identified, and publication quality figures can be produced automatically. Interactive versions of all figures from our 2009 PNAS paper (Castoe, de Koning, et al. 2009) can be automatically generated using the Data Explorer.
-
-*COMING SOON:* We have also included a pipeline that hooks into our evolutionary simulator, Palantír (Kryukov et al., 2015). This pipeline allows a more rigorous analysis of the random expected amount of convergent evolution between each pair of branches. It generates simulated data sets possessing *only* random convergence under a site-heterogeneous model of mutation-selection codon substitution that is roughly based on the real data. The pipeline will then calculate the random expected distribution of excess convergence for every pair of branches in the tree. This allows a more rigorous assessment of excess convergence by providing an empirical P-value that is specific to each pair of branches of interest.
-
----
 ### Tips and Warnings
 
 To be completed.
@@ -90,7 +93,7 @@ To be completed.
 ---
 ###Technical notes
 
-We have implemented `grand-conv` through extensive modification of Ziheng Yang's PAML4.8 (all modifications can be turned off by undefining the macro `#JDKLAB`). The program uses a multi-threaded implementation of our new exact algorithm, which is about 4,000X faster than our original approach when run on a multi-core desktop computer. We also include many-core versions optimized for offloading calculations to Intel Xeon Phi coprocessors, but we found that this is not likely to be very useful except for unrealistically large datasets (see Qian and de Koning, 2015).
+We have implemented `grand-conv` through extensive modification of Ziheng Yang's PAML4.8 (all modifications can be turned off by undefining the macro `#JDKLAB`).
 
 Technical details on the calculations can be found in the Methods and Supplementary info from our paper.
 
