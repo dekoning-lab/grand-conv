@@ -80,12 +80,12 @@ make
 ./gc-discover --dir=output --nthreads=4
 
 # (Optional) Phase 3, run Grand Convergence requesting site-specific data for branch-pairs of interest
-./gc-discover --dir=output --nthreads=4 --branch-pairs="(53,56),(4,37)"
+./gc-discover --dir=output --nthreads=4 --branch-pairs="(53,56),(4,37)" --visualize=1
 ```
 
 **NOTE:** If you don't have branchlengths under the desired model, you should run Phase 1 with the setting `--free-bl=1`.
 
-To view the results, open `$output/User/UI/index.html` in a standards-compliant web browser like Firefox.
+To view the results, use `--visualize=1` to open a web browser automatically with the results or you can manually open `$output/User/UI/index.html` in a standards-compliant web browser like Firefox.
 
 ---
 
