@@ -17,6 +17,9 @@ and: Qian C\*, Bryans N\*, Kruykov I, and APJ de Koning (2015). Visualization an
 Also see Castoe\*, de Koning\* et al 2009. "Evidence for an ancient adaptive episode of convergent molecular evolution." PNAS v106(22): 8986-8991. http://www.pnas.org/content/106/22/8986.abstract
 
 ---
+
+<p align="center"><img src ="http://lab.jasondk.io/data/Grand-Conv-demo.jpg" /></p>
+
 ###About
 
 Grand Convergence (`grand-conv`) calculates the posterior expected numbers of convergent and divergent substitutions across all pairs of indendent branches of a phylogeny. **The program uses a multi-threaded implementation of our new exact algorithm, which is about 4,000X faster than our original approach when run on a multi-core desktop computer.** We also include many-core versions optimized for offloading calculations to Intel Xeon Phi coprocessors, but we found that this is not likely to be very useful except for unrealistically large datasets (see Qian and de Koning, 2015).
