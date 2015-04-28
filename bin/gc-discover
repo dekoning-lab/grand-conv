@@ -14,7 +14,7 @@
 # --branch-pairs=(1,2),(3,4) (outputs sites data on branch pair ..1 x ..2 and ..3 x ..4)
 
 # Allowed command-line options dictionary
-my %allowed = ("dir"=>"output", "nthreads"=>1, "branch-pairs"=>"", "branch1"=>"", "branch2"=>"", "RateAncestor"=>2 );
+my %allowed = ("dir"=>"output", "nthreads"=>1, "branch-pairs"=>"", "branch1"=>"", "branch2"=>"", "RateAncestor"=>2, "visualize"=>0 );
 
 # Parse input options and store in opts
 my %opts = parseInput(\@ARGV);
@@ -43,6 +43,18 @@ system("cp assets/UI/about.html $opts{'dir'}/UI/User/");
 system("cd $opts{'dir'} && ../bin/grand-conv runme-gc-discover.ctl");
 
 print "\nDone gc-discover. Results are in $opts{'dir'}/UI/User/index.html\n";
+
+print "\nDone gc-discover.\n";
+
+if ($opts{'visualize'} == 1) {
+       if ($^O =~ /linux/) {
+               system("xdg-open ./$opts{'dir'}/UI/User/index.html");
+       } elsif ($^O =~ /darwin/) {
+               system("open ./$opts{'dir'}/UI/User/index.html");
+       }
+} else {
+       print "\nYou can view the results in $opts{'dir'}/UI/User/index.html\n";
+}
 exit;
 
 # Functions
