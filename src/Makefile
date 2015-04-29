@@ -51,12 +51,12 @@ all : ../bin/grand-conv ../bin/codeml
 	@-printf "\nBuild complete.\n"
 
 clean :
-	@-rm -f ../bin/grand-conv ||: &> ../clean.log 
-	@-rm -f ../bin/codeml ||: &> ../clean.log 
-	@-rm -f *.o ||: &> ../clean.log 
-	@-rm -rf ../lib/jansson-2.7/build/* ||:  &> ../clean.log 
-	@-cd ../lib/jansson-2.7 && make clean && echo || echo ||: &> ../clean.log 
-	@-cd ../lib/jansson-2.7 && make distclean && echo || echo ||L &> ,,/clean.log
+	@-rm -f ../bin/grand-conv ||: > ../clean.log 2>&1 
+	@-rm -f ../bin/codeml ||: > ../clean.log 2>&1
+	@-rm -f *.o ||: > ../clean.log 2>&1
+	@-rm -rf ../lib/jansson-2.7/build/* ||: > ../clean.log 2>&1 
+	@-cd ../lib/jansson-2.7 && make clean && echo || echo ||: > ../clean.log 2>&1 
+	@-cd ../lib/jansson-2.7 && make distclean && echo || echo ||L > ../clean.log 2>&1 
 	@-cd .. && rm -f lnf rates rst rst1 rub codeml-output.out *.log codeml grand-conv
 	@-printf "Cleaning old files complete.\n"
 
@@ -64,9 +64,9 @@ clean :
 	@-printf "\nCompiler set to: %s\n" $(CC)
 	@-printf "\n[Starting build process.]"
 	@-if [ ! -d ../lib/jansson-2.7 ] ; then tar -zxf ../lib/jansson-2.7.tar.gz -C ../lib/; fi
-	@-if [ ! -e ../lib/jansson-2.7/Makefile ] ; then printf "\nBuilding library dependencies." && cd ../lib/jansson-2.7 && ./configure --prefix=`pwd`/build &> ../../make.log; fi
-	@-cd ../lib/jansson-2.7 && make &> ../make.log && make install &> ../make.log && cp build/lib/libjansson.a ../ && printf "\nDone building dependencies."
-	@-printf "\nBuilding grand-conv." && $(CC) $(CFLAGS) -D JDKLAB=1 -D PARA_ON_SITE -I../lib/Headers -o $@ codeml.c tools.c $(LIBS) ../lib/libjansson.a ||: &> ../make.log
+	@-if [ ! -e ../lib/jansson-2.7/Makefile ] ; then printf "\nBuilding library dependencies." && cd ../lib/jansson-2.7 && ./configure --prefix=`pwd`/build > ../make.log 2>&1; fi
+	@-cd ../lib/jansson-2.7 && make > ../make.log 2>&1 && make install > ../make.log 2>&1 && cp build/lib/libjansson.a ../ && printf "\nDone building dependencies."
+	@-printf "\nBuilding grand-conv." && $(CC) $(CFLAGS) -D JDKLAB=1 -D PARA_ON_SITE -I../lib/Headers -o $@ codeml.c tools.c $(LIBS) ../lib/libjansson.a ||: > ../make.log 2>&1
 
 ../bin/codeml : codeml.c  tools.c treesub.c treespace.c paml.h 
-	@-printf "\nBuilding codeml." && $(CC) $(CFLAGS) -U JDKLAB -o $@ codeml.c tools.c &>../make.log
+	@-printf "\nBuilding codeml." && $(CC) $(CFLAGS) -U JDKLAB -o $@ codeml.c tools.c -lm >make.log 2>&1
