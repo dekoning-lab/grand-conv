@@ -288,6 +288,7 @@ void NodeToBranch (void);
 void BranchToNode (void);
 void ClearNode (int inode);
 int ReadTreeN (FILE *ftree, int *haslength, int *haslabel, int copyname, int popline);
+int ReadTreeDivergence (FILE *ftree, int copyname);
 int ReadTreeB (FILE *ftree, int popline);
 int OutTreeN (FILE *fout, int spnames, int printopt);
 int OutTreeB (FILE *fout);
@@ -298,6 +299,9 @@ void PointconPnodes (void);
 int SetBranch (double x[]);
 int DistanceMat (FILE *fout, int ischeme, double alfa, double *kapa);
 int LSDistance (double * ss, double x[], int (*testx)(double x[],int np));
+
+int SetUserDefDivergeDist(int *node1, int *node2, int numBranchPairs, double *pDivergent);
+double CalcDistance(int n1, int n2);
 
 int StepwiseAdditionMP (double space[]);
 double MPScoreStepwiseAddition (int is, double space[], int save);

@@ -2605,6 +2605,151 @@ int IsNameNumber(char line[])
    return(isname);
 }
 
+int ReadTreeDivergence (FILE *ftree2, int copyname)
+{
+   int cnode, cfather=-1;  /* current node and father */
+   int inodeb=0;  /* node number that will have the next branch length */
+   int cladeLabels=0, i,j,k, level=0, isname, ch=' ', icurspecies=0;
+   char check[NS], delimiters[]="(),:#$=@><;", quote[]="\"\'";
+   int lline=32000;
+   char line[32000], *pch;
+   int l_nnode; // meant to replace tree.nnode++
+
+   // Initialize to -1 for correctness check
+   for (i=0; i<com.ns*2-1;i++) nodes[i].divDistance = -1;
+   nodes[tree.root].divDistance = 0;
+
+   if(com.ns<=0)  error2("you should specify # seqs in the tree file.");
+
+   for(i=0; i<com.ns; i++) check[i]=0;
+
+   while(isspace(ch))
+      ch=fgetc(ftree2);  /* skip spaces */
+   ungetc(ch,ftree2);
+
+   PopPaupTreeRubbish(ftree2);
+
+   l_nnode = com.ns;
+
+   for ( ; ; ) {
+      ch = fgetc (ftree2);
+      if (ch==EOF) return(-1);
+      else if (ch == ';') {
+         if(level!=0) error2("; in treefile");
+         else         break;
+      }
+      else if (ch==',') ;
+      else if (!isgraph(ch))
+         continue;
+      else if (ch == '(') {       /* left (  */
+         level++;
+         cnode=l_nnode++;
+         if(tree.nnode>2*com.ns-1)
+          error2("check #seqs and tree: perhaps too many '('?");
+         if (cfather >= 0) {
+            if(nodes[cfather].nson >= MAXNSONS) {
+               printf("there are at least %d daughter nodes, raise MAXNSONS?", nodes[cfather].nson);
+               exit(-1);
+            }
+         }
+         else {
+
+         }
+         cfather = cnode;
+      }
+      /* treating : and > in the same way is risky. */
+      else if (ch==')') {
+         level--;  inodeb=cfather; cfather=nodes[cfather].father;
+      }
+      else if (ch==':'||ch=='>') {
+
+#ifdef JDKLAB
+         fscanf(ftree2,"%lf",&nodes[inodeb].divDistance);
+#endif
+      }
+      else if (ch==quote[0] || ch==quote[1]) {
+         for (k=0; ; k++) {  /* read notes into line[] */
+            line[k] = (char)fgetc(ftree2);
+            if((int)line[k] == EOF)
+               error2("EOF when reading node label");
+            if(line[k] == quote[0] || line[k] == quote[1])
+               break;
+         }
+         line[k++] = '\0';
+
+         if((pch = strchr(line,'#')) || (pch = strchr(line,'<'))) {
+
+         }
+         if((pch = strchr(line,'>'))) {
+#ifdef JDKLAB
+            sscanf(pch+1, "%lf", &nodes[inodeb].divDistance);
+#endif
+         }
+         if((pch = strchr(line,'$'))) {
+         }
+         if((pch = strchr(line,'=')) || (pch = strchr(line,'@'))) {
+
+         }
+      }
+      else if (ch=='#' || ch=='<') {
+
+      }
+      else if (ch=='$') {
+
+         }
+      else if (ch=='@' || ch=='=') {
+
+      }
+      else { /* read species name or number */
+         if(level<=0)
+            error2("expecting ; in the tree file");
+         line[0]=(char)ch;  line[1]=(char)fgetc(ftree2);
+
+         for (i=1; i<lline; )  { /* read species name into line[] until delimiter */
+            if ((strchr(delimiters,line[i]) && line[i]!='@')
+               || line[i]==(char)EOF || line[i]=='\n')
+               { ungetc(line[i],ftree2); line[i]=0; break; }
+            line[++i]=(char)fgetc(ftree2);
+         }
+         for(j=i-1;j>0;j--) /* trim spaces*/
+            if(isgraph(line[j])) break; else line[j]=0;
+
+         if(FullSeqNames)
+            isname = 1;   /* numbers are part of names. */
+         else
+            isname = IsNameNumber(line);
+
+         if (isname==0) {  /* number */
+            sscanf(line, "%d", &cnode);
+            cnode--;
+         }
+         else {                 /* name */
+              if(!copyname) { //ToDo - If this is always 0, consider removing parameter
+               for(i=0; i<com.ns; i++) if (!strcmp(line,com.spname[i])) break;
+                  cnode=i;
+             }
+              else {
+
+              }
+         }
+         //nodes[cnode].father=cfather;
+         if(nodes[cfather].nson>=MAXNSONS)
+            error2("too many daughter nodes, raise MAXNSONS");
+
+         inodeb = cnode;
+         check[cnode]++;
+      }
+   }//end for
+
+   //Ensure no branches were missed
+   for (i=0; i<com.ns*2-1;i++) {
+      if (nodes[i].divDistance == -1) {
+         //if = -1, The div distance tree didn't match the regular tree passed
+         return (1);
+      }
+   }
+   return (0);
+}
 
 
 int ReadTreeN (FILE *ftree, int *haslength, int *haslabel, int copyname, int popline)
@@ -5432,8 +5577,8 @@ void PostProbFwdBwd(double x[])
    int ii, aa, aa_2, gg, hp;
    int lst=(com.readpattern?com.npatt:com.ls);
    double *sPMat= (double*)malloc(tree.nnode*com.ncatG*20*20*sizeof(double));    // precomputed PMat values (over all node and gamma cat)
-   int *LRLabel = (int*)malloc(tree.nnode*2*sizeof(int));   //stores the id of the node being pointed to by each L and R
-                                                //ie for node x, L = LRLabel[x*2] while R = LRLabel[x*2+1]
+   int *LRLabel = (int*)malloc(tree.nnode*2*sizeof(int));            //stores the id of the node being pointed to by each L and R
+                                                                     //ie for node x, L = LRLabel[x*2] while R = LRLabel[x*2+1]
 
    double *L = (double*)malloc(tree.nnode*20*com.ncatG*sizeof(double));
    double *R = (double*)malloc(tree.nnode*20*com.ncatG*sizeof(double));
@@ -6233,6 +6378,12 @@ int AncestralMarginal (FILE *fout, double x[], double fhsiteAnc[], double Sir[])
    
    fclose(branchTotals);
 
+   // Replace estimated x values by user defined values
+   if (com.userDivDist == 1)
+   {
+      SetUserDefDivergeDist(node1, node2, numBranchPairs, pDivergent);
+   }
+
    outputDataInJS(node1, node2, pDivergent, pAllConvergent, 
       siteSpecificMap, com.selectedBranchPairs, com.numOfSelectedBranchPairs, numBranchPairs, lst,
       postNumSub, siteClass);
@@ -6274,6 +6425,26 @@ int AncestralMarginal (FILE *fout, double x[], double fhsiteAnc[], double Sir[])
 
    if(coding) free(pbestAA);
    return (0);
+}
+
+// Calculate divergence distance based on the user supplied tree
+// We are using sqrt(b1*b2) to calculate the distance
+int SetUserDefDivergeDist(int *node1, int *node2, int numBranchPairs, double *pDivergent)
+{
+   // SumDivergeDist(tree.root);
+   int n1, n2, ig;
+
+   for (ig=0;ig<numBranchPairs;ig++) {
+      n1 = node1[ig];
+      n2 = node2[ig];
+
+      pDivergent[ig] = CalcDistance(n1, n2);
+   }
+}
+
+double CalcDistance(int n1, int n2)
+{
+   return sqrt(nodes[n1].divDistance * nodes[n2].divDistance);
 }
 
 int getSiteClass(int hp)

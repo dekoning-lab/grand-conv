@@ -131,6 +131,8 @@ struct common_info {
       int numOfThreads, numOfSelectedBranchPairs, excludeTipTips;
       double *conP0, *conP_part1, *conP_byCat, *conP_prior, *entropy;
       char htmlFileName[512];
+      char dtreef[512];
+      int userDivDist;
    #endif
    double (*plfun)(double x[],int np);
    double hyperpar[4]; /* kostas, the hyperparameters for the prior distribution of distance & omega */
@@ -151,6 +153,7 @@ struct TREEB {
 struct TREEN {
    int father, nson, sons[MAXNSONS], ibranch, ipop;
    double branch, age, omega, *conP, label;
+   double divDistance;
    #ifdef JDKLAB
       double *conP_part1, *conP_byCat, *conP_prior, *entropy;
       int nodeID;
@@ -665,6 +668,7 @@ int Forestry (FILE *fout)
 {
    static int times=0;
    FILE *ftree, *frate=NULL;
+   FILE *dtree;
    int  status=0, i,j=0,k, itree, ntree, np, iteration=1;
    int pauptree=0, haslength;
    double x[NP],xb[NP][2], xcom[NP-NBRANCH], lnL=0,lnL0=0, e=1e-8, tl=0, nchange=-1;
@@ -697,6 +701,20 @@ int Forestry (FILE *fout)
       if(ReadTreeN(ftree,&haslength, &i,0,1))
             { puts("end of tree file."); break; }
 
+#ifdef JDKLAB
+      if ((dtree=fopen(com.dtreef,"r"))==NULL) {
+         //printf("\ntree file %s not found.\n", com.dtreef);
+         //exit(-1);
+         com.userDivDist = 0;
+      } else {
+         if (ReadTreeDivergence (dtree, 0)) {
+            puts("Unable to read user defined divergence distances. Using program estimates");
+            com.userDivDist = 0;
+         }else {
+            com.userDivDist = 1;
+         }
+      }
+#endif
       printf("\nTREE # %2d\n", itree+1);
       fprintf(fout,"\n\nTREE # %2d:  ", itree+1);
       fprintf(flnf,"\n\n%2d\n", itree+1);
@@ -1581,7 +1599,7 @@ int GetOptions (char *ctlf)
 #endif
 
 #ifdef JDKLAB
-   nopt = 42;
+   nopt = 43;
    char *optstr[] = {"seqfile", "outfile", "treefile", "seqtype", "noisy", 
         "cleandata", "runmode", "method", 
         "clock", "TipDate", "getSE", "RateAncestor", "CodonFreq", "estFreq", "verbose",
@@ -1589,7 +1607,8 @@ int GetOptions (char *ctlf)
         "NSsites", "NShmm", "icode", "Mgene", "fix_kappa", "kappa",
         "fix_omega", "omega", "fix_alpha", "alpha","Malpha", "ncatG", 
         "fix_rho", "rho", "ndata", "bootstrap", "Small_Diff", "fix_blength",
-        "branch1", "branch2", "numOfThreads", "excludeTipTips", "htmlFileName"};
+        "branch1", "branch2", "numOfThreads", "excludeTipTips", "htmlFileName",
+        "divdistfile"};
 #endif
 
    double t;
@@ -1708,6 +1727,7 @@ int GetOptions (char *ctlf)
                case (39): com.numOfThreads=(int)t; if(com.numOfThreads==0) com.numOfThreads=1; break;
                case (40): com.excludeTipTips=(int)t; break;
                case (41): if(com.htmlFileName[0] == '\0') sscanf(pline+1, "%s", com.htmlFileName); break;
+               case (42): sscanf(pline+1, "%s", com.dtreef);   break;
 #endif
            }
            break;

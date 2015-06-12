@@ -12,9 +12,10 @@
 # --dir=output (folder name for output and temp files)
 # --nthreads=4 (number of threads to use)
 # --branch-pairs=(1,2),(3,4) (outputs sites data on branch pair ..1 x ..2 and ..3 x ..4)
+# --divdistree=file.tree (contain user defined branch lengths)
 
 # Allowed command-line options dictionary
-my %allowed = ("dir"=>"output", "nthreads"=>1, "branch-pairs"=>"", "branch1"=>"", "branch2"=>"", "RateAncestor"=>2, "visualize"=>0 );
+my %allowed = ("dir"=>"output", "nthreads"=>1, "divdistfile"=>"divdistfile", "branch-pairs"=>"", "branch1"=>"", "branch2"=>"", "RateAncestor"=>2, "visualize"=>0 );
 
 # Parse input options and store in opts
 my %opts = parseInput(\@ARGV);
@@ -25,6 +26,8 @@ my $suffix   = "assets/grand-conv-suffix.ctl";
 $opts{"outfile"} = "../$opts{'dir'}/gc-output.out";
 
 # Set optional default options
+$userDefinedDivDist = 1;
+
 applyDefaults( \%opts );
 
 unpackBranches( \%opts );
@@ -129,6 +132,10 @@ sub applyDefaults {
 			if ( $key eq "tree" ) {
 				die "Error: a phylogenetic tree is required with --tree=file.\n";
 			}
+			if ( $key eq "divdistfile")
+			{
+				$userDefinedDivDist = 0;
+			}
 
 			unless ($key eq "alpha") { $opts{$key} = $allowed{$key}; }
 		}
@@ -148,7 +155,7 @@ sub createControlfile {
 	open(OUT, ">".$fname) or die "Error: Can't open file $fname for output.\n";
 	foreach $infile (@files) {
 		# Correspondence with PAML controls
-		my %commandOptions = ( "nthreads"=>"numOfThreads", "branch1" => "branch1", "branch2" => "branch2", "outfile"=>"outfile", "RateAncestor"=>"RateAncestor");
+		my %commandOptions = ( "nthreads"=>"numOfThreads",  "branch1" => "branch1", "branch2" => "branch2", "outfile"=>"outfile", "RateAncestor"=>"RateAncestor", "divdistfile" => "divdistfile",);
 		my %revCommandOptions = reverse %commandOptions;
 
 		open(IN, $infile) or die "Error: cannot open template control file $template.\n";
@@ -169,7 +176,7 @@ sub createControlfile {
 						print OUT "\t$opt = $val\n"; 
 					} elsif ($opt eq "seqfile") {
 						$val = $options{$revCommandOptions{"seqfile"}};
-						print OUT "\t$opt = ../$val\n"; 
+						print OUT "\t$opt = ../$val\n";
 					} elsif ($opt eq "treefile") {
 						if ($phase == 1) {
 							$val = $options{$revCommandOptions{"treefile"}};
@@ -177,6 +184,13 @@ sub createControlfile {
 							$val = "$opts{'dir'}/gc-estimated-bls.tree" 
 						}	
 						print OUT "\t$opt = ../$val\n";
+					} elsif ($opt eq "divdistfile") {
+						if ($userDefinedDivDist == 1){
+							$val = $options{$revCommandOptions{"divdistfile"}};
+							print OUT "\t$opt = ../$val\n";
+						}else{
+							print OUT "\t*divdistfile = \n";
+						}
 					} elsif ($opt eq "fix_alpha") {
 						if ($phase == 1) {
 							$val = $options{$revCommandOptions{"fix_alpha"}};
