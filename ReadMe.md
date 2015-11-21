@@ -120,3 +120,4 @@ Changes that were made to the original PAML code include:
   - If Macro ```PARA_ON_NODE``` is defined, the program will parallel based on the sizes of input phylogenetic tree when executing ```AncestralMarginal()```
 * One compiler optimization flag ```-m64``` was added and used as default in ```Makefile```. If running on 32-bit machine, this flag should be turned off
 * For shallow phylogenies it may be useful to use a previously determined metric of divergence rather than relying on those estimated by grand-conv. This can be done by supplying a second tree with pre-determined measures for each branch length. To do this, include the flag ```--divdistfile=dat/NUC2.tree``` when calling gc-discover.
+* Both sequential and interleaved phylip files are supported. Interleaved phylip files must have an 'I' on the first line (i.e. ```20 1000 I```).

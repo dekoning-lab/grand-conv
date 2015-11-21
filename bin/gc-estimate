@@ -115,7 +115,7 @@ sub createControlfile {
 	open(OUT, ">".$fname) or die "Error: Can't open file $fname for output.\n";
 
 	# Correspondence with PAML controls
-	my %commandOptions = ("in"=>"seqfile", "tree"=>"treefile", "free-bl"=>"fix_blength", "free-gamma"=>"fix_alpha", "ncat-gamma"=>"ncatG", "aa-model"=>"aaRatefile", "gencode"=>"icode", "clean"=>"cleandata", "alpha"=>"alpha");
+	my %commandOptions = ("in"=>"seqfile", "tree"=>"treefile", "free-bl"=>"fix_blength", "free-gamma"=>"fix_alpha", "ncat-gamma"=>"ncatG", "aa-model"=>"aaRatefile", "gencode"=>"icode", "clean"=>"cleandata", "alpha"=>"alpha", "seqtype"=>"seqtype");
 	my %revCommandOptions = reverse %commandOptions;
 
 	open(IN, $template) or die "Error: cannot open template control file $template.\n";
@@ -158,6 +158,14 @@ sub createControlfile {
 					print OUT "\t$opt = $val\n"; 
 				} elsif ($opt eq "aaRatefile") {
 					print OUT "\t$opt = ../dat/$options{$revCommandOptions{$opt}}.dat\n";
+				} elsif ($opt eq "seqtype") {
+					$val = $options{$revCommandOptions{"seqtype"}};
+					if ($val eq "codon") {
+						$val = 3;
+					} elsif ($val eq "aa") {
+						$val = 2;
+					}
+					print OUT "\t$opt = $val\n";
 				} else {
 					print OUT "\t$opt = $options{$revCommandOptions{$opt}}\n";
 				}
