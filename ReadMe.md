@@ -100,9 +100,9 @@ We have implemented `grand-conv` through extensive modification of Ziheng Yang's
 
 Technical details on the calculations can be found in the Methods and Supplementary info from our paper.
 
-To site-specific data for more than one pair of sites, use format `--branch-pairs="(53,56),(4,37)"`
+To get site-specific data for more than one pair of sites, use format `--branch-pairs="(53,56),(4,37)"`
 
-Colour coding on the Rate vs. Diversity plot is red for `p(convergence) > 0.8` and orange for `p(convergence) > 0.5`. Colouring is only shown for the *first* pair of branches specified via `--branch-pairs=`.
+Colouring on the Rate vs. Diversity plot is such that red denotes for `p(convergence) > 0.8` and orange denotes `p(convergence) > 0.5`. Colouring is given only for the *first* pair of branches specified via `--branch-pairs` input parameter.
 
 Changes that were made to the original PAML code include:
 * A number of additions modifications were made to the ```AncestralMarginal()``` function in treesub.c
