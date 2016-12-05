@@ -87,6 +87,10 @@ sub unpackBranches {
 			}
 		}
 	}
+	if ($opts{'branch1'} eq "") {
+		$opts{'branch1'} .= "*";
+		$opts{'branch2'} .= "*";
+	}
 }
 
 sub captureOutput {
@@ -205,7 +209,14 @@ sub createControlfile {
 						print OUT "\t$opt = $val\n"; 
 					} elsif ($opt eq "aaRatefile") {
 						print OUT "\t$opt = ../dat/$options{$revCommandOptions{$opt}}.dat\n";
-					} else {
+					} elsif ($opt eq "branch1" || $opt eq "branch2") {
+						if ($options{$revCommandOptions{$opt}} eq "*") {
+							print OUT "\t$opt =$options{$revCommandOptions{$opt}}\n";
+						} else {
+							print OUT "\t$opt = $options{$revCommandOptions{$opt}}\n";
+						}
+					}
+					else {
 						print OUT "\t$opt = $options{$revCommandOptions{$opt}}\n";
 					}
 					$flag=1;

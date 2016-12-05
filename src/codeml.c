@@ -1581,6 +1581,13 @@ void getSelectedBranches(char *line, char *opt, int firstCalled){
       tmp = strtok(NULL, ",");
       index += 3;
    }
+
+   // Fixes error where numBranchPairs appears to be 1 when no branch pairs specified.
+   if (!firstCalled && com.numOfSelectedBranchPairs == 1) {
+      if (com.selectedBranchPairs[0] == com.selectedBranchPairs[1] && com.selectedBranchPairs[0] == 0){
+         com.numOfSelectedBranchPairs = 0;
+      }
+   }
 }
 #endif
 

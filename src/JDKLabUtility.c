@@ -107,6 +107,22 @@ void generateHTML(char *file, char *templateFile, char* moreFile, int* selectedB
                     "</div><br>\n\n",
                     b1, b2, b1, b2, b1, b2);               
             }
+            if (numOfSelectedBranchPairs == 0) {
+                fprintf(newHTML,
+                    "<h4 style=\"float:left; margin-left:70px\"> Branch Pairs must be provided for this plot (see the <i>--branch-pairs</i> parameter)</h4>");
+            }
+        }
+        if (strstr(line,"@rateVsDivPlot")){
+            for(i=0; i<numOfSelectedBranchPairs; i++){
+                int b1 = selectedBranchPairs[i*3], b2 = selectedBranchPairs[i*3+1];
+                fprintf(newHTML, 
+                    "<div id=\"BP_%dx%d-barPlot\"></div>\n"
+                    "<div data-collapse style=\"float:centre\">\n"
+                    "\t<h4 style=\"float:centre; margin-left:500px\"> Sites <br> Branch Pair: %d..%d </h4>\n"
+                    "<div id=\"BP_%dx%d-sheet\" style=\"float:centre; margin-left:150px; margin-right:150px\"></div>\n"
+                    "</div><br>\n\n",
+                    b1, b2, b1, b2, b1, b2);
+            }
         }
         if (strstr(line, "@plot")) {
             for (i=0; i < numOfSelectedBranchPairs; i++) {
@@ -115,6 +131,10 @@ void generateHTML(char *file, char *templateFile, char* moreFile, int* selectedB
                     "<div id=\"figure\" style=\"float:left; width:550px; z-index:2000; background-color: #ffffff; \">\n"
                     "<h4 style=\"float:left; margin-left:70px\"> Branch Pair: %d..%d </h4>\n"
                     "<div id=\"BP_%dx%d-data-plot\" style=\"margin-left: 10px; float:left; width:540px; outline: 0 !important; border: 0 !important; \"></div>\n</div>\n", b1,b2, b1, b2);
+            }
+            if (numOfSelectedBranchPairs == 0) {
+                fprintf(newHTML,
+                    "<h4 style=\"float:left; margin-left:70px\"> Branch Pairs must be provided for this plot (see the <i>--branch-pairs</i> parameter)</h4>");
             }
         }
     }
@@ -333,7 +353,6 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
         strcpy(siteSpecificBranchPairsIDs, "[ ");
     }
 
-
     for(ig=0; ig<numOfSelectedBranchPairs; ig++){
         char *siteSpecificBP = (char*)malloc(lst*30*sizeof(char));
         strcpy(siteSpecificBP, "[ ");
@@ -341,7 +360,9 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
             if((siteSpecificMap[ig*lst*2+h*2] != 0 || siteSpecificMap[ig*lst*2+h*2+1] != 0))
                 sprintf(siteSpecificBP, "%s[%d, %.6f, %.6f], ", siteSpecificBP, h, siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
         }
-        sprintf(siteSpecificBP, "%s[%d, %.6f, %.6f] ]", siteSpecificBP, h,  siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
+        if((siteSpecificMap[ig*lst*2+h*2] != 0 || siteSpecificMap[ig*lst*2+h*2+1] != 0))
+            sprintf(siteSpecificBP, "%s[%d, %.6f, %.6f] ", siteSpecificBP, h,  siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
+        sprintf(siteSpecificBP, "%s]", siteSpecificBP);
 
         char *branchPairIDs = (char*)malloc(20*sizeof(char));
         char *branchPairNames = (char*)malloc(30*sizeof(char));
@@ -364,6 +385,10 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
         free(branchPairIDs);
         free(branchPairNames);
     }
+    if (numOfSelectedBranchPairs == 0) {
+        sprintf(siteSpecificBranchPairsIDs, "%s]", siteSpecificBranchPairsIDs);
+    }
+
 
     siteSpecificBranchPairs = makeupDataOutput(siteSpecificBranchPairs, "siteSpecificBranchPairs");
     siteSpecificBranchPairsName = makeupDataOutput(siteSpecificBranchPairsName, "siteSpecificBranchPairsName");

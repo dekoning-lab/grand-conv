@@ -80,7 +80,7 @@ make
 ./gc-discover --dir=output --nthreads=4
 
 # (Optional) Phase 3, run Grand Convergence requesting site-specific data for branch-pairs of interest
-./gc-discover --dir=output --nthreads=4 --branch-pairs="(53,56),(4,37)" --visualize=1
+./gc-discover --dir=output --nthreads=4 --branch-pairs="(53,56)" --visualize=1
 ```
 
 **NOTE:** If you don't have branchlengths under the desired model, you should run Phase 1 with the setting `--free-bl=1`.
@@ -99,6 +99,10 @@ To be completed.
 We have implemented `grand-conv` through extensive modification of Ziheng Yang's PAML4.8 (all modifications can be turned off by undefining the macro `#JDKLAB`).
 
 Technical details on the calculations can be found in the Methods and Supplementary info from our paper.
+
+To site-specific data for more than one pair of sites, use format `--branch-pairs="(53,56),(4,37)"`
+
+Colour coding on the Rate vs. Diversity plot is red for `p(convergence) > 0.8` and orange for `p(convergence) > 0.5`. Colouring is only shown for the *first* pair of branches specified via `--branch-pairs=`.
 
 Changes that were made to the original PAML code include:
 * A number of additions modifications were made to the ```AncestralMarginal()``` function in treesub.c

@@ -511,7 +511,8 @@ double testDetailedBalance (double P[], double pi[], int n)
 
 int PMatUVRoot (double P[], double t, int n, double U[], double V[], double Root[])
 {
-/* P(t) = U * exp{Root*t} * V
+/* 
+P(t) = U * exp{Root*t} * V
 */
    int i,j,k;
    double expt, uexpt, *pP;
