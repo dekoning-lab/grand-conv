@@ -10,9 +10,9 @@ http://lab.jasondk.io  <BR>
 ---
 __This software is in beta release. Please help us improve it by [opening an issue](https://github.com/dekoning-lab/grand-conv/issues) or by reporting your experience to [Jason](mailto:jason.dekoning@ucalgary.ca).__
 
-Prior to publication please cite: Qian C and APJ de Koning (2015). Rapid Discovery of Convergent Molecular Evolution Across Entire Phylogenies. University of Calgary. http://lab.jasondk.io
+Prior to publication please cite: Qian C and APJ de Koning (2018). Rapid Discovery of Convergent Molecular Evolution Across Entire Phylogenies. University of Calgary. http://lab.jasondk.io
 
-and: Qian C\*, Bryans N\*, Kruykov I, and APJ de Koning (2015). Visualization and analysis of statistical signatures of convergent molecular evolution. University of Calgary. http://lab.jasondk.io
+and: Qian C\*, Bryans N\*, Kruykov I, and APJ de Koning (2018). Visualization and analysis of statistical signatures of convergent molecular evolution. University of Calgary. http://lab.jasondk.io
 
 Also see Castoe\*, de Koning\* et al 2009. "Evidence for an ancient adaptive episode of convergent molecular evolution." PNAS v106(22): 8986-8991. http://www.pnas.org/content/106/22/8986.abstract
 
