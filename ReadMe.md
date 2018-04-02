@@ -1,7 +1,7 @@
-#Grand-Convergence
-####Rapid Discovery of Convergent Molecular Evolution Across Entire Phylogenies
-####Chenzhe Qian, Nathan Bryans, and Jason de Koning
-#####April 2015
+# Grand-Convergence
+#### Rapid Discovery of Convergent Molecular Evolution Across Entire Phylogenies
+#### Chenzhe Qian, Nathan Bryans, and Jason de Koning
+##### April 2015
 
 de Koning Lab, University of Calgary <BR>
 Biochemisty and Molecular Biology Graduate Program in Bioinformatics <BR>
@@ -20,7 +20,7 @@ Also see Castoe\*, de Koning\* et al 2009. "Evidence for an ancient adaptive epi
 
 <p align="center"><img src ="http://lab.jasondk.io/data/Grand-Conv-demo.jpg" /></p>
 
-###About
+### About
 
 Grand Convergence (`grand-conv`) calculates the posterior expected numbers of convergent and divergent substitutions across all pairs of indendent branches of a phylogeny. **The program uses a multi-threaded implementation of our new exact algorithm, which is about 4,000X faster than our original approach when run on a multi-core desktop computer.** We also include many-core versions optimized for offloading calculations to Intel Xeon Phi coprocessors, but we found that this is not likely to be very useful except for unrealistically large datasets (see Qian and de Koning, 2015).
 
@@ -31,9 +31,9 @@ All calculations are integrated over the posterior distribution of ancestral sta
 *COMING SOON:* We have also included a pipeline that hooks into our evolutionary simulator, Palantír (Kryukov et al., 2015). This pipeline allows a more rigorous analysis of the random expected amount of convergent evolution between each pair of branches. It generates simulated data sets possessing *only* random convergence under a site-heterogeneous model of mutation-selection codon substitution that is roughly based on the real data. The pipeline will then calculate the random expected distribution of excess convergence for every pair of branches in the tree. This allows a more rigorous assessment of excess convergence by providing an empirical P-value that is specific to each pair of branches of interest.
 
 ---
-###Getting Started
+### Getting Started
 
-####1. Prerequisites
+#### 1. Prerequisites
 
 To compile Grand Convergence you will need only a standard C compiler with OpenMP support. Most Linux systems will already meet this requirement.
 
@@ -55,7 +55,7 @@ brew install clang-omp
 
 If homebrew reports no such package, you may need to run `brew update` first.
 
-####2. Quick Start
+#### 2. Quick Start
 
 To compile, run `make` in the root folder. This will build the library dependency and will separately build `codeml` and `grand-conv` from the same source files.
 
@@ -65,7 +65,7 @@ Inputs are a multiple sequence alignment in Phylip format, either in codons (def
 
 Results are output in HTML format in `$output/UI/user/index.html`, where `$output` is a user-defined variable indicated by `--dir=$output` (the default value is `output`).
 
-####Example usage
+#### Example usage
 
 ```
 # Download and compile
@@ -94,7 +94,7 @@ To view the results, use `--visualize=1` to open a web browser automatically wit
 To be completed.
 
 ---
-###Technical notes
+### Technical notes
 
 We have implemented `grand-conv` through extensive modification of Ziheng Yang's PAML4.8 (all modifications can be turned off by undefining the macro `#JDKLAB`).
 
