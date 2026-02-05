@@ -129,6 +129,7 @@ struct common_info {
    #ifdef JDKLAB
       int *selectedBranchPairs;
       int numOfThreads, numOfSelectedBranchPairs, excludeTipTips;
+      int useGPU;  /* Use GPU acceleration if available (0=off, 1=on) */
       double *conP0, *conP_part1, *conP_byCat, *conP_prior, *entropy;
       char htmlFileName[512];
       char dtreef[512];
@@ -299,6 +300,15 @@ scanf("%d", &KGaussLegendreRule);
    com.fix_rho=1;     com.rho=0.;
    com.getSE=0;       com.print=0;    com.verbose=1;  com.fix_blength=0;
    com.method=0;      com.space=NULL;
+
+#ifdef JDKLAB
+   com.useGPU=0;      /* GPU acceleration disabled by default */
+   com.numOfThreads=1;
+   com.excludeTipTips=0;
+   com.htmlFileName[0]='\0';
+   com.dtreef[0]='\0';
+   com.userDivDist=0;
+#endif
 
    frub=gfopen("rub","w");
 	frst=gfopen("rst","w");
@@ -564,9 +574,12 @@ continue;
          com.conP = (double*)realloc(com.conP, com.sconP);
 
          #ifdef JDKLAB
-            com.conP_part1 = (double*)malloc( (com.ns*2-1) * (com.ncode*com.ncode*(com.readpattern?com.npatt:com.ls)) * sizeof(double) ); 
-            com.conP_prior = (double*)malloc( (com.ns*2-1) * (com.ncode*com.ncode*(com.readpattern?com.npatt:com.ls)) * sizeof(double) ); 
-            com.conP_byCat = (double*)malloc(com.ncatG * (com.ns*2-1) * (com.ncode*com.ncode*(com.readpattern?com.npatt:com.ls)) * sizeof(double) ); 
+            /* NOTE: These buffers may be reallocated later in GetInitials() around line 2469.
+             * After realloc, PointconPnodes() MUST be called to re-establish node pointers.
+             * See the detailed comment at that location for the bug this addresses. */
+            com.conP_part1 = (double*)malloc( (com.ns*2-1) * (com.ncode*com.ncode*(com.readpattern?com.npatt:com.ls)) * sizeof(double) );
+            com.conP_prior = (double*)malloc( (com.ns*2-1) * (com.ncode*com.ncode*(com.readpattern?com.npatt:com.ls)) * sizeof(double) );
+            com.conP_byCat = (double*)malloc(com.ncatG * (com.ns*2-1) * (com.ncode*com.ncode*(com.readpattern?com.npatt:com.ls)) * sizeof(double) );
             com.entropy    = (double*)malloc( (com.sconP * sizeof(double) ));
          #endif
 
@@ -1606,16 +1619,16 @@ int GetOptions (char *ctlf)
 #endif
 
 #ifdef JDKLAB
-   nopt = 43;
-   char *optstr[] = {"seqfile", "outfile", "treefile", "seqtype", "noisy", 
-        "cleandata", "runmode", "method", 
+   nopt = 44;
+   char *optstr[] = {"seqfile", "outfile", "treefile", "seqtype", "noisy",
+        "cleandata", "runmode", "method",
         "clock", "TipDate", "getSE", "RateAncestor", "CodonFreq", "estFreq", "verbose",
         "model", "hkyREV", "aaDist","aaRatefile",
         "NSsites", "NShmm", "icode", "Mgene", "fix_kappa", "kappa",
-        "fix_omega", "omega", "fix_alpha", "alpha","Malpha", "ncatG", 
+        "fix_omega", "omega", "fix_alpha", "alpha","Malpha", "ncatG",
         "fix_rho", "rho", "ndata", "bootstrap", "Small_Diff", "fix_blength",
         "branch1", "branch2", "numOfThreads", "excludeTipTips", "htmlFileName",
-        "divdistfile"};
+        "divdistfile", "useGPU"};
 #endif
 
    double t;
@@ -1735,6 +1748,7 @@ int GetOptions (char *ctlf)
                case (40): com.excludeTipTips=(int)t; break;
                case (41): if(com.htmlFileName[0] == '\0') sscanf(pline+1, "%s", com.htmlFileName); break;
                case (42): sscanf(pline+1, "%s", com.dtreef);   break;
+               case (43): com.useGPU=(int)t; break;
 #endif
            }
            break;
@@ -2455,10 +2469,24 @@ int GetInitials (double x[], int* fromfile)
          error2("oom conP");
 
       #ifdef JDKLAB
-         com.conP_part1 = (double*)realloc(com.conP_part1, (com.sconP*com.ncode/com.npatt*(com.readpattern?com.npatt:com.ls)/(tree.nnode-com.ns)*(tree.nnode))); 
-         com.conP_prior = (double*)realloc(com.conP_prior, (com.sconP*com.ncode/com.npatt*(com.readpattern?com.npatt:com.ls)/(tree.nnode-com.ns)*(tree.nnode))); 
-         com.conP_byCat =(double*)realloc(com.conP_byCat,(com.sconP*com.ncatG/com.npatt*(com.readpattern?com.npatt:com.ls))); 
+         com.conP_part1 = (double*)realloc(com.conP_part1, (com.sconP*com.ncode/com.npatt*(com.readpattern?com.npatt:com.ls)/(tree.nnode-com.ns)*(tree.nnode)));
+         com.conP_prior = (double*)realloc(com.conP_prior, (com.sconP*com.ncode/com.npatt*(com.readpattern?com.npatt:com.ls)/(tree.nnode-com.ns)*(tree.nnode)));
+         com.conP_byCat =(double*)realloc(com.conP_byCat,(com.sconP*com.ncatG/com.npatt*(com.readpattern?com.npatt:com.ls)));
          com.entropy    =(double*)realloc(com.entropy, com.sconP);
+
+         /* BUG FIX (Feb 2026): realloc() may move the buffer to a new memory location.
+          * When this happens, the pointers in nodes[].conP_part1, nodes[].conP_byCat,
+          * and nodes[].conP that were set by PointconPnodes() become dangling pointers
+          * (pointing to freed memory). This caused segfaults on Linux clusters with
+          * datasets >159 species, while working on Mac where realloc often extends
+          * in-place. Must re-establish all node pointers after any realloc.
+          *
+          * TODO: A cleaner long-term fix would be to store offsets instead of pointers
+          * in the node structures, computing actual addresses on-the-fly. The offset
+          * infrastructure already exists for GPU support (nodes_conP_part1_offset).
+          * See treesub.c lines 6318-6319 for the pattern.
+          */
+         PointconPnodes();
       #endif
    }
 

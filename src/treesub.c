@@ -5,7 +5,10 @@
 
 #ifdef JDKLAB
    #include "JDKLabUtility.c"
-   unsigned int *nodes_conP_part1_offset; // for mic offload and heterogeneous parallel 
+   unsigned int *nodes_conP_part1_offset; // for mic offload and heterogeneous parallel
+   #ifdef USE_GPU
+      #include "convergence_gpu.h"
+   #endif
 #endif
 
 extern char BASEs[], *EquateBASE[], BASEs5[], *EquateBASE5[], AAs[], BINs[], CODONs[][4], nChara[], CharaMap[][64];
@@ -3306,8 +3309,16 @@ void PointconPnodes (void)
 {
 /* This points the nodes[com.ns+inode].conP to the right space in com.conP.
    The space is different depending on com.cleandata (0 or 1)
-   This routine updates internal nodes com.conP only.  
+   This routine updates internal nodes com.conP only.
    End nodes (com.conP0) are updated in InitConditionalPNode().
+
+   IMPORTANT: This function MUST be called after any realloc() of com.conP,
+   com.conP_part1, com.conP_byCat, or com.conP_prior. The realloc may move
+   the buffer to a new address, invalidating all node pointers. Failure to
+   re-call this function after realloc causes segfaults on platforms where
+   realloc moves memory (e.g., Linux glibc) but may appear to work on
+   platforms where realloc extends in-place (e.g., macOS). See the realloc
+   block in codeml.c GetInitials() around line 2469.
 */
 
    int nintern=0, i;
@@ -6133,6 +6144,10 @@ int AncestralMarginal (FILE *fout, double x[], double fhsiteAnc[], double Sir[])
    
    // BEGINNING OF THE MAIN CONVERGENCE/DIVERGENCE STUFF -------------------------------------------------------------------------------------------------------------------------------
    // CALCULATION OF MOST OF THE CONVERGENT, DIVERGENT SUBSTITUTIONS OCCURS HERE (REQUISITE PROBABILITIES HAVE BEEN COLLECTED OVER THE TREE ALREADY; JUST NEED TO SUM UP)...
+
+   /* Forward declaration */
+   int getSiteClass(int hp);
+
    int jnode;
    double probConverge, probParallel, probConverge_liberal, probDiverge;
    
@@ -6209,6 +6224,78 @@ int AncestralMarginal (FILE *fout, double x[], double fhsiteAnc[], double Sir[])
          nodes_index += 3;
       } //jnode
    } // inode
+
+#ifdef USE_GPU
+   /* GPU-accelerated path */
+   int gpu_used = 0;
+   if (com.useGPU) {
+      gpu_backend_t gpu = gpu_available();
+      if (gpu != GPU_BACKEND_NONE) {
+         char device_name[256];
+         size_t globalMem;
+         if (gpu_init(gpu, device_name, &globalMem) == 0) {
+            printf("\nUsing GPU backend: %s (%s, %.2f GB memory)\n",
+                   gpu_backend_name(gpu), device_name,
+                   globalMem / (1024.0 * 1024.0 * 1024.0));
+
+            /* Calculate size of conP_part1 data
+             * nodes_conP_part1_offset stores cumulative offsets for each node.
+             * Find the max offset and add one more node's data to get total size.
+             * Only internal nodes (nson > 0) have actual data.
+             */
+            size_t max_offset = 0;
+            int internal_nodes = 0;
+            for (int i = 0; i <= tree.nbranch; i++) {
+               if (nodes_conP_part1_offset[i] > max_offset) {
+                  max_offset = nodes_conP_part1_offset[i];
+               }
+               if (nodes[i].nson > 0) internal_nodes++;
+            }
+            size_t npatt = (com.readpattern ? com.npatt : com.ls);
+            size_t size_per_node = n * n * npatt;
+            size_t conP_part1_size = (max_offset + size_per_node) * sizeof(double);
+
+            printf("DEBUG: conP_part1_size=%zu, internalNodes=%d, numNodes=%d, numPairs=%d, numSites=%d, n=%d\n",
+                   conP_part1_size, internal_nodes, tree.nnode, numBranchPairs, lst, n);
+
+            /* Call GPU kernel */
+            int ret = gpu_convergence(
+                gpu,
+                com.conP_part1, conP_part1_size,
+                nodes_conP_part1_offset, tree.nnode,
+                nodesIndexs, numBranchPairs,
+                lst, n,
+                pAllConvergentOnSite, pDivergentOnSite
+            );
+
+            if (ret == 0) {
+               gpu_used = 1;
+               printf("GPU kernel completed successfully.\n");
+
+               /* GPU output is in [pair][site] layout, matching PARA_ON_NODE */
+               /* Accumulate site values onto each branch pair */
+               for (ig = 0; ig < numBranchPairs; ig++) {
+                  for (h = 0; h < lst; h++) {
+                     pDivergent[ig] += pDivergentOnSite[ig * lst + h];
+                     pAllConvergent[ig] += pAllConvergentOnSite[ig * lst + h];
+                  }
+                  /* Store node indices */
+                  node1[ig] = nodesIndexs[ig * 3];
+                  node2[ig] = nodesIndexs[ig * 3 + 1];
+               }
+            } else {
+               fprintf(stderr, "GPU kernel failed, falling back to CPU\n");
+            }
+            gpu_cleanup(gpu);
+         } else {
+            fprintf(stderr, "GPU initialization failed, falling back to CPU\n");
+         }
+      }
+   }
+
+   if (!gpu_used) {
+   /* CPU fallback path */
+#endif
 
    for(ig=0; ig<com.ngene; ig++) { // alpha may differ over ig
       // Parallel with openmp
@@ -6294,11 +6381,15 @@ int AncestralMarginal (FILE *fout, double x[], double fhsiteAnc[], double Sir[])
    #ifdef PARA_ON_SITE
    for(h=0;h<lst; h++) {
       for (ig=0;ig<numBranchPairs;ig++) {
-         pDivergent[ig] += pDivergentOnSite[h*numBranchPairs+ig]; 
+         pDivergent[ig] += pDivergentOnSite[h*numBranchPairs+ig];
          pAllConvergent[ig] += pAllConvergentOnSite[h*numBranchPairs+ig];
       }
    }
    #endif
+
+#ifdef USE_GPU
+   } /* end if (!gpu_used) */
+#endif
 
    // Output site-specific posterior probabilities of convergence (and divergence) for requested branch pairs only   
    FILE *branchP;
