@@ -78,7 +78,7 @@
       <p> Regression line Slope: <input type="text" id="slopeInputField" size="12" style="float:centre" onchange="updateRegressionLine()"> Intercept: <input type="text" id="interceptInputField" size="12" style="float:centre" onchange="updateRegressionLine()">
       <p><button style="margin-left:120px;" id="showTipTipButton" onclick="showTipTip()" disabled>Show Tip-tip</button><button style="margin-left:20px;" id="hideTipTipButton" onclick="hideTipTip()">Hide Tip-tip</button></p> 
       <p> <label style="float:centre; margin-left: 120px">Open</label> 
-        <a onclick="openSheetPopup()" text="Open" label="Open" style="float:centre; margin-left: 5px"> Branch Pairs Table View</a>
+        <a onclick="toggleTable()" text="Open" label="Open" style="float:centre; margin-left: 5px; cursor:pointer;"> Branch Pairs Table View</a>
     </div>
   </div>
 
@@ -95,6 +95,10 @@
 </div>
 
 <p style="clear: both;"></p>
+
+<div id="ssheet" style="display:none; width:100%; margin-left:0px;">
+</div>
+
 <HR>
   <h1>Site-Specific Posterior Analysis</h1>
   <p>Information will be available on site-specific posterior probabilities of convergence for branch pairs indicated in the controlfile.</p>

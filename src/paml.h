@@ -369,9 +369,9 @@ void copySptree(void);
 void printSptree(void);
 
 
-enum {BASEseq=0, CODONseq, AAseq, CODON2AAseq, BINARYseq, BASE5seq} SeqTypes;
+enum {BASEseq=0, CODONseq, AAseq, CODON2AAseq, BINARYseq, BASE5seq};
 
-enum {PrBranch=1, PrNodeNum=2, PrLabel=4, PrAge=8, PrOmega=16} OutTreeOptions;
+enum {PrBranch=1, PrNodeNum=2, PrLabel=4, PrAge=8, PrOmega=16};
 
 
 /* use mean (0; default) for discrete gamma instead of median (1) */

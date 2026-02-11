@@ -61,7 +61,7 @@ char* makeupDataOutput(char *data, char *type){
     char *line = (char*)malloc((1+strlen(type))*sizeof(char)); 
     strcpy(line, type);
 
-    line = (char*)realloc(line, (strlen(line)+3)*sizeof(char));
+    line = (char*)realloc(line, (strlen(line)+4)*sizeof(char));
     strcat(line, " = ");
 
     line = (char*)realloc(line, (strlen(line)+strlen(data)+1)*sizeof(char));
@@ -152,34 +152,38 @@ int cmpfunc (const void * x, const void * y){
 
 void calculateRegression(double *pDivergent, double *pAllConvergent, int numBranchPairs, double *k, double *b){
 
-    double *s = (double*)malloc(numBranchPairs*numBranchPairs*sizeof(double));
-    memset(s, 0, numBranchPairs*numBranchPairs*sizeof(double));
     int i,j, counter = 0, cutoff = 0, index = 0;
-    double xdelta, ydelta;
+    double xdelta, ydelta, slope;
 
+    /* Pass 1: count non-zero slopes (avoids O(n^2) memory allocation that
+       overflows int and requires tens of GB for large trees) */
     for(i=0; i<numBranchPairs; i++){
-        for(j=i; j<numBranchPairs; j++){
+        for(j=i+1; j<numBranchPairs; j++){
             xdelta = pDivergent[i]-pDivergent[j];
             ydelta = pAllConvergent[i]-pAllConvergent[j];
-            if(xdelta==0 && ydelta==0){
-                s[i*numBranchPairs+j] = 0;
-            }else{
-                s[i*numBranchPairs+j] = ydelta/xdelta;
-                s[i*numBranchPairs+j] = (s[i*numBranchPairs+j]==-1) ? 0 : s[i*numBranchPairs+j];
-            }
-            if(s[i*numBranchPairs+j] != 0) counter++;
+            if(xdelta==0 && ydelta==0) continue;
+            slope = ydelta/xdelta;
+            if(slope == -1) continue;
+            if(slope != 0) counter++;
         }
     }
 
-    double *vector = (double*)malloc(counter*sizeof(double));
-    for(i=0;i<numBranchPairs*numBranchPairs;i++){
-        if(s[i]!=0) {
-            vector[index]=s[i];
-            index++;
+    /* Pass 2: collect non-zero slopes directly into vector */
+    double *vector = (double*)malloc((size_t)counter*sizeof(double));
+    for(i=0; i<numBranchPairs; i++){
+        for(j=i+1; j<numBranchPairs; j++){
+            xdelta = pDivergent[i]-pDivergent[j];
+            ydelta = pAllConvergent[i]-pAllConvergent[j];
+            if(xdelta==0 && ydelta==0) continue;
+            slope = ydelta/xdelta;
+            if(slope == -1) continue;
+            if(slope != 0) {
+                vector[index]=slope;
+                index++;
+            }
         }
     }
     qsort(vector, counter, sizeof(double), cmpfunc);
-    free(s);
 
     for(i=0; i<counter; i++){
         if(vector[i] >= -1){
@@ -230,25 +234,25 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
     strcpy(xPostNumSub, "[ ");
     strcpy(ySiteClass, "[ ");
     
-    for (ig=0;ig<numBranchPairs-1;ig++) { 
-        sprintf(xPoints, "%s%.6f%s", xPoints, pDivergent[ig], ", ");
-        sprintf(yPoints, "%s%.6f%s", yPoints, pAllConvergent[ig], ", ");
-        sprintf(labels, "%s\"%d..%d%s%d..%d\"%s", labels, nodes[node1[ig]].father, node1[ig], " x ", nodes[node2[ig]].father, node2[ig], ", ");
+    for (ig=0;ig<numBranchPairs-1;ig++) {
+        sprintf(xPoints + strlen(xPoints), "%.6f, ", pDivergent[ig]);
+        sprintf(yPoints + strlen(yPoints), "%.6f, ", pAllConvergent[ig]);
+        sprintf(labels + strlen(labels), "\"%d..%d x %d..%d\", ", nodes[node1[ig]].father, node1[ig], nodes[node2[ig]].father, node2[ig]);
     }
 
-    sprintf(xPoints, "%s%f", xPoints, pDivergent[ig]);
-    sprintf(yPoints, "%s%f", yPoints, pAllConvergent[ig]);
-    sprintf(labels, "%s\"%d..%d%s%d..%d\"", labels, nodes[node1[ig]].father, node1[ig], " x ", nodes[node2[ig]].father, node2[ig]);
+    sprintf(xPoints + strlen(xPoints), "%f", pDivergent[ig]);
+    sprintf(yPoints + strlen(yPoints), "%f", pAllConvergent[ig]);
+    sprintf(labels + strlen(labels), "\"%d..%d x %d..%d\"", nodes[node1[ig]].father, node1[ig], nodes[node2[ig]].father, node2[ig]);
     strcat(xPoints, " ]");
     strcat(yPoints, " ]");
     strcat(labels, " ]");
 
     for (h=0;h<lst-1;h++) {
-        sprintf(xPostNumSub, "%s%.6f%s", xPostNumSub, postNumSub[h], ", ");
-        sprintf(ySiteClass, "%s%d%s", ySiteClass, (int)siteClass[h], ", ");
+        sprintf(xPostNumSub + strlen(xPostNumSub), "%.6f, ", postNumSub[h]);
+        sprintf(ySiteClass + strlen(ySiteClass), "%d, ", (int)siteClass[h]);
     }
-    sprintf(xPostNumSub, "%s%.6f", xPostNumSub, postNumSub[lst-1]);
-    sprintf(ySiteClass, "%s%d", ySiteClass, siteClass[lst-1]);
+    sprintf(xPostNumSub + strlen(xPostNumSub), "%.6f", postNumSub[lst-1]);
+    sprintf(ySiteClass + strlen(ySiteClass), "%d", siteClass[lst-1]);
     strcat(xPostNumSub, " ]");
     strcat(ySiteClass, " ]");
 
@@ -264,7 +268,7 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
     // parse and embellish user-input html name for output
     int pos = strchr(com.htmlFileName,'.')-com.htmlFileName;
     char *file = (char*)malloc((16+pos)*sizeof(char));
-    char temp[pos];
+    char temp[pos+1];
     strncpy(temp, com.htmlFileName, pos);
     temp[pos] = '\0';
     strcpy(file, "UI/User/");
@@ -341,9 +345,9 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
     free(ySiteClass);
 
     // format site-specific data and write to file
-    char *siteSpecificBranchPairs = (char*)malloc(20*numOfSelectedBranchPairs*sizeof(char));
-    char *siteSpecificBranchPairsName = (char*)malloc(30*numOfSelectedBranchPairs*sizeof(char));
-    char *siteSpecificBranchPairsIDs = (char*)malloc(25*numOfSelectedBranchPairs*sizeof(char));
+    char *siteSpecificBranchPairs = (char*)malloc((20*numOfSelectedBranchPairs+4)*sizeof(char));
+    char *siteSpecificBranchPairsName = (char*)malloc((30*numOfSelectedBranchPairs+4)*sizeof(char));
+    char *siteSpecificBranchPairsIDs = (char*)malloc((25*numOfSelectedBranchPairs+4)*sizeof(char));
     strcpy(siteSpecificBranchPairs, "[ ");
     strcpy(siteSpecificBranchPairsName, "[ ");
     strcpy(siteSpecificBranchPairsIDs, "[ ");
@@ -358,11 +362,11 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
         strcpy(siteSpecificBP, "[ ");
         for(h=0; h<lst-1; h++){
             if((siteSpecificMap[ig*lst*2+h*2] != 0 || siteSpecificMap[ig*lst*2+h*2+1] != 0))
-                sprintf(siteSpecificBP, "%s[%d, %.6f, %.6f], ", siteSpecificBP, h, siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
+                sprintf(siteSpecificBP + strlen(siteSpecificBP), "[%d, %.6f, %.6f], ", h, siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
         }
         if((siteSpecificMap[ig*lst*2+h*2] != 0 || siteSpecificMap[ig*lst*2+h*2+1] != 0))
-            sprintf(siteSpecificBP, "%s[%d, %.6f, %.6f] ", siteSpecificBP, h,  siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
-        sprintf(siteSpecificBP, "%s]", siteSpecificBP);
+            sprintf(siteSpecificBP + strlen(siteSpecificBP), "[%d, %.6f, %.6f] ", h, siteSpecificMap[ig*lst*2+h*2], siteSpecificMap[ig*lst*2+h*2+1]);
+        strcat(siteSpecificBP, "]");
 
         char *branchPairIDs = (char*)malloc(20*sizeof(char));
         char *branchPairNames = (char*)malloc(30*sizeof(char));
@@ -372,13 +376,13 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
         fprintf(dataFile, "%s;\n", siteSpecificBP);
 
         if(ig<numOfSelectedBranchPairs-1) {
-            sprintf(siteSpecificBranchPairs, "%s%s, ", siteSpecificBranchPairs, branchPairIDs);
-            sprintf(siteSpecificBranchPairsName, "%s%s, ", siteSpecificBranchPairsName, branchPairNames);
-            sprintf(siteSpecificBranchPairsIDs, "%s\"%s\", ", siteSpecificBranchPairsIDs, branchPairIDs);
+            sprintf(siteSpecificBranchPairs + strlen(siteSpecificBranchPairs), "%s, ", branchPairIDs);
+            sprintf(siteSpecificBranchPairsName + strlen(siteSpecificBranchPairsName), "%s, ", branchPairNames);
+            sprintf(siteSpecificBranchPairsIDs + strlen(siteSpecificBranchPairsIDs), "\"%s\", ", branchPairIDs);
         }else{
-            sprintf(siteSpecificBranchPairs, "%s%s ]", siteSpecificBranchPairs, branchPairIDs);
-            sprintf(siteSpecificBranchPairsName, "%s%s ]", siteSpecificBranchPairsName, branchPairNames);
-            sprintf(siteSpecificBranchPairsIDs, "%s\"%s\" ]", siteSpecificBranchPairsIDs, branchPairIDs);
+            sprintf(siteSpecificBranchPairs + strlen(siteSpecificBranchPairs), "%s ]", branchPairIDs);
+            sprintf(siteSpecificBranchPairsName + strlen(siteSpecificBranchPairsName), "%s ]", branchPairNames);
+            sprintf(siteSpecificBranchPairsIDs + strlen(siteSpecificBranchPairsIDs), "\"%s\" ]", branchPairIDs);
         }
 
         free(siteSpecificBP);
@@ -386,7 +390,7 @@ void outputDataInJS(int *node1, int *node2, double *pDivergent, double *pAllConv
         free(branchPairNames);
     }
     if (numOfSelectedBranchPairs == 0) {
-        sprintf(siteSpecificBranchPairsIDs, "%s]", siteSpecificBranchPairsIDs);
+        strcat(siteSpecificBranchPairsIDs, "]");
     }
 
 

@@ -1570,11 +1570,12 @@ void getSelectedBranches(char *line, char *opt, int firstCalled){
    
    start = strcspn(line, "=") + 1;
    end = strcspn(line, "*");
-   char values[end-start];
+   char values[end-start+1];
    strncpy(values, line+start, end-start);
+   values[end-start] = '\0';
    char *tmp = strtok(values, ",");
 
-   if(firstCalled){      
+   if(firstCalled){
       com.numOfSelectedBranchPairs = 0;
       while((tmp != NULL) && (strcmp(tmp,"") != 0) ) {
          tmp = strtok(NULL, ",");
@@ -1583,6 +1584,7 @@ void getSelectedBranches(char *line, char *opt, int firstCalled){
 
       com.selectedBranchPairs = (int*)malloc(com.numOfSelectedBranchPairs*3*sizeof(int));
       strncpy(values, line+start, end-start);
+      values[end-start] = '\0';
       tmp = strtok(values, ",");
    }
 
