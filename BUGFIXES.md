@@ -404,6 +404,63 @@ var B=Math.max(1,Math.floor(l/10))
 
 ---
 
+### 21. Debug console.log Left in rateScatterPlot
+
+**Symptom:** `circlesToBringToFront.length` logged to console on every rate plot render.
+**Fix:** Removed the `console.log(circlesToBringToFront.length)` call.
+
+---
+
+### 22. Array Out-of-Bounds in generateRateVsDiversityPlot
+
+**Symptom:** Potential TypeError crash (`f[h]` is undefined) when the site-specific data array `f` is shorter than the filtered site indices in `c`.
+**Root cause:** The inner loop `for(;f[h][0]<i;)h++` advances `h` monotonically without checking if `h` has exceeded `f.length`.
+**Fix:** Add bounds check and break.
+
+```js
+// Before:
+for(var i=c[g];f[h][0]<i;)h++
+
+// After:
+for(var i=c[g];h<f.length&&f[h][0]<i;)h++;if(h>=f.length)break
+```
+
+---
+
+### 23. download() Accumulates DOM Elements and Contains Dead Code
+
+**Symptom:** Each Ctrl+click export appends two new `<a>` elements without removing old ones. Also, `document.querySelector("scatterOutput")` is evaluated via comma operator and discarded (no `<scatterOutput>` element exists).
+**Fix:** Remove old `.dragout` elements before creating new ones. Remove dead `scatterOutput` querySelector.
+
+```js
+// Before:
+var a=document.querySelector("treeOutput"),b=...
+
+// After:
+var a=document.querySelector("treeOutput");$(".dragout",a).remove();var b=...
+
+// Also removed:
+var d=(document.querySelector("scatterOutput"),svgScatterPlot.draw.exportSvg(...))
+// Changed to:
+var d=svgScatterPlot.draw.exportSvg(...)
+```
+
+---
+
+### 24. Duplicate id="figure" in Template.html
+
+**Symptom:** Two `<div>` elements share `id="figure"`, which is invalid HTML. `document.getElementById("figure")` would only find the first one.
+**Fix:** Renamed to `id="figure-plot"` and `id="figure-tree"`.
+
+---
+
+### 25. Double `<body>` Tag in Template.html
+
+**Symptom:** Template.html had `<body>` on line 21 and `<body onload='main()'>` on line 66 (inside the content area). Invalid HTML; browsers ignore the second tag but process its `onload`.
+**Fix:** Moved `onload="main()"` to the real `<body>` tag on line 21. Replaced the second `<body>` with a plain `<div>`.
+
+---
+
 ## Summary
 
 | # | Category | File | Severity |
@@ -428,3 +485,8 @@ var B=Math.max(1,Math.floor(l/10))
 | 18 | JS: Leak | grand-conv.min.js | Memory leak |
 | 19 | JS: Rendering | grand-conv.min.js | Broken axis ticks |
 | 20 | JS: Globals | grand-conv.min.js | Namespace pollution |
+| 21 | JS: Debug | grand-conv.min.js | Minor (cleanup) |
+| 22 | JS: Crash | grand-conv.min.js | Potential TypeError |
+| 23 | JS: Leak/Dead code | grand-conv.min.js | DOM accumulation |
+| 24 | HTML: Invalid | Template.html | Duplicate IDs |
+| 25 | HTML: Invalid | Template.html | Double body tag |
