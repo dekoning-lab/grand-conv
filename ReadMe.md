@@ -18,7 +18,8 @@ Also see Castoe\*, de Koning\* et al 2009. "Evidence for an ancient adaptive epi
 
 ---
 
-<p align="center"><img src ="http://lab.jasondk.io/data/Grand-Conv-demo.jpg" /></p>
+<p align="center"><img src="assets/Grand-Conv-demo.jpg" width="700"
+  alt="Left: posterior expected convergent against divergent substitutions for all branch pairs, with a non-parametric errors-in-variables regression as the null model and one high-excess-convergence pair highlighted. Right: the same branch pair marked in red on the squamate phylogeny." /></p>
 
 ### About
 
